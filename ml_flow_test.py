@@ -1,5 +1,6 @@
 import mlflow
 from mlflow.tracking import MlflowClient
+from TaxiFareModel import trainer
 
 EXPERIMENT_NAME = "[GLO][Global][rreinhaus]TaxiFareModel 1"
 

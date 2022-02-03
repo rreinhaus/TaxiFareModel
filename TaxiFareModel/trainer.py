@@ -3,12 +3,16 @@ from TaxiFareModel.encoders import TimeFeaturesEncoder,DistanceTransformer
 from TaxiFareModel.utils import compute_rmse 
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from memoized_property import memoized_property
 import mlflow
 from  mlflow.tracking import MlflowClient
+import joblib
+
+
 
 class Trainer():
     def __init__(self, X, y):
@@ -21,7 +25,7 @@ class Trainer():
         self.y = y
         self.experiment_name = '[GLO][Global][rreinhaus]TaxiFareModel 1'
 
-    def set_pipeline(self):
+    def set_pipeline(self, model):
         """defines the pipeline as a class attribute"""
         dist_pipe = Pipeline([
         ('dist_trans', DistanceTransformer()),
@@ -35,13 +39,13 @@ class Trainer():
         ('time', time_pipe, ['pickup_datetime'])], remainder="drop")
         pipe = Pipeline([
         ('preproc', preproc_pipe),
-        ('linear_model', LinearRegression())])
+        ('model', model())])
 
         return pipe
 
     def run(self):
         """set and train the pipeline"""
-        pipe = self.set_pipeline()
+        pipe = self.set_pipeline(model)
         pipe.fit(X_train, y_train)
         return pipe
 
@@ -74,6 +78,11 @@ class Trainer():
 
     def mlflow_log_metric(self, key, value):
         self.mlflow_client.log_metric(self.mlflow_run.info.run_id, key, value)
+    
+    def save_model(self):
+        """ Save the trained model into a model.joblib file """
+        joblib.dump(self.run(), 'model.joblib')
+
 
 
 if __name__ == "__main__":
@@ -88,12 +97,21 @@ if __name__ == "__main__":
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.15)
     # build pipeline
     tr_pipeline = Trainer(X,y)
-    pipeline = tr_pipeline.set_pipeline()
-    trainer = Trainer(X_train, y_train)
-    # train
-    trainer.run()
-    # evaluate the pipeline
-    rmse = trainer.evaluate(X_val, y_val)
-    print(rmse)
-    experiment_id = trainer.mlflow_experiment_id
-    print(f"experiment URL: https://mlflow.lewagon.co/#/experiments/{experiment_id}")
+    for model in [LinearRegression, RandomForestRegressor]:
+        pipeline = tr_pipeline.set_pipeline(model)
+        trainer = Trainer(X_train, y_train)
+        # train
+        trainer.run()
+        # evaluate the pipeline
+        rmse = trainer.evaluate(X_val, y_val)
+        print(rmse)
+        experiment_id = trainer.mlflow_experiment_id
+        print(f"experiment URL: https://mlflow.lewagon.co/#/experiments/{experiment_id}")
+        # save the model
+        trainer.save_model()
+        # running the model
+        client = trainer.mlflow_client
+        run = trainer.mlflow_run
+        trainer.mlflow_log_metric("rmse", rmse)
+        trainer.mlflow_log_param("model", model)
+        trainer.mlflow_log_param("student_name", 'rreinhaus')
