@@ -1,0 +1,15 @@
+artifact_uri: file:///home/rreinhaus/code/rreinhaus/TaxiFareModel/mlruns/1/18ad926e67234bbbbc08565dee154bcd/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '1'
+lifecycle_stage: active
+name: ''
+run_id: 18ad926e67234bbbbc08565dee154bcd
+run_uuid: 18ad926e67234bbbbc08565dee154bcd
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1643912079186
+status: 1
+tags: []
+user_id: unknown
